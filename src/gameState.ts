@@ -3,6 +3,7 @@ import { set, setIn } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, install, loop, Loop, LoopReducer } from "redux-loop";
+import {firePlayerMissile, updateMissiles} from "./missiles";
 import * as sideEffects from "./sideEffects";
 import {EffectState, IEntity, IState, KeyState, Message} from "./types";
 
@@ -11,11 +12,12 @@ const initialState: IState = {
     {
       active: true,
       id: "player",
-      sprite: "assets/xwing-smol.png",
+      sprite: "assets/tie-smol.png",
       x: 500,
       y: 500,
       width: 70,
       height: 80,
+      subType: { type: "PLAYER" },
     },
   ],
   gameInitialized: EffectState.NOT_STARTED,
@@ -29,8 +31,12 @@ const initialState: IState = {
 };
 
 const keyHandlers: {readonly [key: string]: (IState) => IState} = {
-  " ": (state) => {
+  "p": (state) => {
     return set(state, "paused", !state.paused);
+  },
+
+  " ": (state) => {
+    return firePlayerMissile(state);
   },
 };
 
@@ -45,8 +51,8 @@ const updatePlayer = (state: IState): IState => {
   const updatedPlayer = [
     setter(keyMap.w, "y", -5),
     setter(keyMap.a, "x", -5),
-    setter(keyMap.s, "y", 6),
-    setter(keyMap.d, "x", 6),
+    setter(keyMap.s, "y", 5),
+    setter(keyMap.d, "x", 5),
   ].reduce((p, cur) => cur(p), player);
 
   return setIn(state, ["entities", 0], updatedPlayer);
@@ -63,6 +69,19 @@ const gameReducer: LoopReducer<IState, Message> = (
 ): Loop<IState, Message> => {
   switch (message.type) {
     case "TICK":
+      // const categorized = state.entities.reduce((acc, cur) => {
+      //   const [key, val] = {
+      //     missile: ["missiles", acc.missiles.concat([cur])],
+      //   }[cur.subType.type];
+      //
+      //   return assign(acc, {
+      //     player: acc.player,
+      //     [key]: val,
+      //   });
+      // }, {
+      //   player: state.entities[0],
+      //   missiles: [],
+      // });
       return state.gameInitialized === EffectState.NOT_STARTED
         // if still loading call the init game effect
         ? loop(
@@ -77,6 +96,7 @@ const gameReducer: LoopReducer<IState, Message> = (
         // otherwise run the reducers for players and other entities
         : loop(
             [
+              updateMissiles,
               updatePlayer,
             ].reduce((currentState, reducer) => reducer(currentState), state),
             Cmd.none,

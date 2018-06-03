@@ -1,5 +1,12 @@
 import * as PIXI from "pixi.js";
 
+export type EntitySubType =
+  | { readonly type: "PLAYER" }
+  | { readonly type: "MISSILE"
+      readonly speed: number;
+      readonly velocity: number;
+    };
+
 export interface IEntity {
   readonly id: string;
   readonly sprite: string;
@@ -8,6 +15,7 @@ export interface IEntity {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly subType: EntitySubType;
 }
 
 export enum EffectState  {

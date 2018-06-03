@@ -11,6 +11,8 @@ export const initGame = (app: PIXI.Application) => () => (new Promise((resolve) 
 
   PIXI.loader
     .add("assets/xwing-smol.png")
+    .add("assets/tie-smol.png")
+    .add("assets/lazor.png")
     .load(setup);
 
   function setup() {
