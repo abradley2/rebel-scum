@@ -1,13 +1,12 @@
 import * as PIXI from "pixi.js";
-
+import {IEntity} from "./types";
 // sideEffects.ts WHERE ALL THE BAD SIDE-EFFECTY THINGS HAPPEN
 // .. just disabling tslint here since everything is a side effect
 
 /* tslint:disable*/
-export const initGame = (
-  app: PIXI.Application,
-  messageCreator: (ready: boolean) => any
-) => () => {
+const drawableEntities: {[entityId: string]: PIXI.Sprite} = {}
+
+export const initGame = (app: PIXI.Application) => () => (new Promise((resolve) => {
   document.getElementById("app").appendChild(app.view);
 
   PIXI.loader
@@ -15,13 +14,29 @@ export const initGame = (
     .load(setup);
 
   function setup() {
-    const sprite = new PIXI.Sprite(
-      PIXI.loader.resources["assets/xwing.png"].texture,
-    );
-
-    app.stage.addChild(sprite);
-
-    messageCreator(true)
+    resolve(true)
   }
-};
+}));
+
+export const draw = (
+  app: PIXI.Application,
+  entities: ReadonlyArray<IEntity>
+) => () => {
+  entities.forEach(entity => {
+    if (!drawableEntities[entity.id]) {
+      const sprite = new PIXI.Sprite(
+        PIXI.loader.resources["assets/xwing.png"].texture,
+      );
+
+      app.stage.addChild(sprite);
+
+      drawableEntities[entity.id] = sprite
+    }
+
+    Object.assign(drawableEntities[entity.id], {
+      x: entity.x,
+      y: entity.y
+    })
+  })
+}
 /* tslint:enable */

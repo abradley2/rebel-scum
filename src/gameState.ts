@@ -1,80 +1,104 @@
 import * as Bacon from "baconjs";
-import { set } from "icepick";
+import { set, setIn } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, install, loop, Loop, LoopReducer } from "redux-loop";
 import * as sideEffects from "./sideEffects";
-
-export type Message =
-  | {
-      readonly type: "TICK";
-      readonly app: PIXI.Application;
-    }
-  | { readonly type: "GAME_READY" }
-  | { readonly type: "KEY_PRESS", readonly key: string }
-  | { readonly type: "NOOP" };
-
-enum EffectState  {
-  NOT_STARTED = "NOT_STARTED",
-  PENDING = "PENDING",
-  FINISHED = "FINISHED",
-  FAILED = "FAILED",
-}
-
-interface IState {
-  readonly gameInitialized: EffectState;
-  readonly paused: boolean;
-}
+import {EffectState, IState, Message} from "./types";
 
 const initialState: IState = {
+  entities: [
+    {
+      active: true,
+      id: "player",
+      sprite: "assets/xwing.png",
+      x: 500,
+      y: 500,
+    },
+  ],
   gameInitialized: EffectState.NOT_STARTED,
   paused: false,
+};
+
+const keyHandlers: {readonly [key: string]: (IState) => IState} = {
+  " ": (state) => {
+    return set(state, "paused", !state.paused);
+  },
+
+  "w": (state) => {
+    return setIn(state, ["entities", 0, "y"], state.entities[0].y - 6);
+  },
 };
 
 const gameReducer: LoopReducer<IState, Message> = (
   state: IState = initialState, message: Message,
 ): Loop<IState, Message> => {
-
   switch (message.type) {
     case "TICK":
       return state.gameInitialized === EffectState.NOT_STARTED
         ? loop(
           set(state, "gameInitialized", EffectState.PENDING),
-          Cmd.run(sideEffects.initGame(
-            message.app,
-            (): Message => ({ type: "GAME_READY" }),
-          )),
+          Cmd.run<Message>(
+            sideEffects.initGame(message.app),
+            {
+              successActionCreator: () => ({ type: "GAME_READY" }),
+            },
+          ),
         )
         : loop(state, Cmd.none);
 
-    case "GAME_READY":
+    case "KEY_PRESS":
       return loop(
-        set(state, "gameInitialized", EffectState.FINISHED),
+        keyHandlers[message.key] ? keyHandlers[message.key](state) : state,
         Cmd.none,
       );
+
+    case "GAME_READY" :
+      return loop(
+          set(state, "gameInitialized", EffectState.FINISHED),
+          Cmd.none,
+        );
 
     default:
       return loop(state, Cmd.none);
   }
 };
 
-export const gameState = createStore(gameReducer, install());
-
-const dispatch = (message: Message) => gameState.dispatch(message);
-
 export function ticker(app: PIXI.Application): any {
   const tickStream = Bacon.interval(16, true)
     .map<Message>({ type: "TICK", app });
 
-  const inputStream = Bacon.fromEvent(document, "keypress")
+  const inputStream = Bacon.fromEvent(document, "keydown")
     .map<Message>((e: KeyboardEvent) => {
       return { type: "KEY_PRESS", key: e.key };
-    });
+    })
+    .log();
 
   const mergedStreams = Bacon.mergeAll(tickStream, inputStream);
 
-  return mergedStreams.onValue((message) => {
-    return dispatch(message);
-  });
+  // wrap the reducer so it always runs the drawing side effect after
+  const wrappedReducer: LoopReducer<IState, Message> = (state, message) => {
+    const result = gameReducer(state, message);
+    const updatedState = result[0];
+    const cmd = result[1];
 
+    return loop(
+      updatedState,
+      Cmd.list([
+        cmd,
+        updatedState.gameInitialized === EffectState.FINISHED
+          ? Cmd.run(sideEffects.draw(
+            app, updatedState.entities,
+          ))
+          : Cmd.none,
+      ]),
+    );
+  };
+
+  const gameState = createStore(wrappedReducer, install());
+
+  // ensure type discipline on any of the messages return from the streams
+  const dispatch = (message: Message) => gameState.dispatch(message);
+
+  return mergedStreams.onValue((message) => dispatch(message));
 }
