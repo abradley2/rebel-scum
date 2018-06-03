@@ -1,3 +1,4 @@
+import * as Bacon from "baconjs";
 import { set } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
@@ -10,6 +11,7 @@ export type Message =
       readonly app: PIXI.Application;
     }
   | { readonly type: "GAME_READY" }
+  | { readonly type: "KEY_PRESS", readonly key: string }
   | { readonly type: "NOOP" };
 
 enum EffectState  {
@@ -35,7 +37,7 @@ const gameReducer: LoopReducer<IState, Message> = (
 
   switch (message.type) {
     case "TICK":
-      return state.gameInitialized
+      return state.gameInitialized === EffectState.NOT_STARTED
         ? loop(
           set(state, "gameInitialized", EffectState.PENDING),
           Cmd.run(sideEffects.initGame(
@@ -60,8 +62,19 @@ export const gameState = createStore(gameReducer, install());
 
 const dispatch = (message: Message) => gameState.dispatch(message);
 
-export function ticker(app: PIXI.Application): number {
-  return setInterval(() => {
-    return dispatch({type: "TICK", app});
-  }, 16.67);
+export function ticker(app: PIXI.Application): any {
+  const tickStream = Bacon.interval(16, true)
+    .map<Message>({ type: "TICK", app });
+
+  const inputStream = Bacon.fromEvent(document, "keypress")
+    .map<Message>((e: KeyboardEvent) => {
+      return { type: "KEY_PRESS", key: e.key };
+    });
+
+  const mergedStreams = Bacon.mergeAll(tickStream, inputStream);
+
+  return mergedStreams.onValue((message) => {
+    return dispatch(message);
+  });
+
 }
