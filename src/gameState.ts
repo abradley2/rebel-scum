@@ -64,15 +64,14 @@ const gameReducer: LoopReducer<IState, Message> = (
   }
 };
 
-export function ticker(app: PIXI.Application): any {
+export function createGameStream(app: PIXI.Application): any {
   const tickStream = Bacon.interval(16, true)
     .map<Message>({ type: "TICK", app });
 
   const inputStream = Bacon.fromEvent(document, "keydown")
     .map<Message>((e: KeyboardEvent) => {
       return { type: "KEY_PRESS", key: e.key };
-    })
-    .log();
+    });
 
   const mergedStreams = Bacon.mergeAll(tickStream, inputStream);
 
@@ -100,5 +99,8 @@ export function ticker(app: PIXI.Application): any {
   // ensure type discipline on any of the messages return from the streams
   const dispatch = (message: Message) => gameState.dispatch(message);
 
-  return mergedStreams.onValue((message) => dispatch(message));
+  return mergedStreams
+    .map((message) => dispatch(message))
+    .map(() =>  gameState.getState())
+    .onValue((val) => val);
 }
