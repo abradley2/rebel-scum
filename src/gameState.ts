@@ -4,19 +4,27 @@ import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, install, loop, Loop, LoopReducer } from "redux-loop";
 import * as sideEffects from "./sideEffects";
-import {EffectState, IState, Message} from "./types";
+import {EffectState, IEntity, IState, KeyState, Message} from "./types";
 
 const initialState: IState = {
   entities: [
     {
       active: true,
       id: "player",
-      sprite: "assets/xwing.png",
+      sprite: "assets/xwing-smol.png",
       x: 500,
       y: 500,
+      width: 70,
+      height: 80,
     },
   ],
   gameInitialized: EffectState.NOT_STARTED,
+  keyMap: {
+    a: KeyState.UP,
+    d: KeyState.UP,
+    s: KeyState.UP,
+    w: KeyState.UP,
+  },
   paused: false,
 };
 
@@ -24,10 +32,30 @@ const keyHandlers: {readonly [key: string]: (IState) => IState} = {
   " ": (state) => {
     return set(state, "paused", !state.paused);
   },
+};
 
-  "w": (state) => {
-    return setIn(state, ["entities", 0, "y"], state.entities[0].y - 6);
-  },
+const updatePlayer = (state: IState): IState => {
+  const player = state.entities[0];
+  const keyMap = state.keyMap;
+
+  const setter =
+    (predicate: KeyState, coord: string, value: number) =>
+    (p: IEntity) => predicate === KeyState.DOWN ? set(p, coord, p[coord] + value) : p;
+
+  const updatedPlayer = [
+    setter(keyMap.w, "y", -5),
+    setter(keyMap.a, "x", -5),
+    setter(keyMap.s, "y", 6),
+    setter(keyMap.d, "x", 6),
+  ].reduce((p, cur) => cur(p), player);
+
+  return setIn(state, ["entities", 0], updatedPlayer);
+};
+
+const setKeyMapState = (state: IState, key: string, isDown: boolean): IState => {
+  return Object.keys(state.keyMap).indexOf(key) !== -1 ?
+     setIn(state, ["keyMap", key], isDown ? KeyState.DOWN : KeyState.UP)
+     : state;
 };
 
 const gameReducer: LoopReducer<IState, Message> = (
@@ -36,6 +64,7 @@ const gameReducer: LoopReducer<IState, Message> = (
   switch (message.type) {
     case "TICK":
       return state.gameInitialized === EffectState.NOT_STARTED
+        // if still loading call the init game effect
         ? loop(
           set(state, "gameInitialized", EffectState.PENDING),
           Cmd.run<Message>(
@@ -45,11 +74,24 @@ const gameReducer: LoopReducer<IState, Message> = (
             },
           ),
         )
-        : loop(state, Cmd.none);
+        // otherwise run the reducers for players and other entities
+        : loop(
+            [
+              updatePlayer,
+            ].reduce((currentState, reducer) => reducer(currentState), state),
+            Cmd.none,
+        );
 
-    case "KEY_PRESS":
+    case "KEY_UP":
       return loop(
-        keyHandlers[message.key] ? keyHandlers[message.key](state) : state,
+        setKeyMapState(state, message.key, false),
+        Cmd.none,
+      );
+
+    case "KEY_DOWN":
+      const handler = keyHandlers[message.key];
+      return loop(
+        setKeyMapState(handler ? handler(state) : state, message.key, true),
         Cmd.none,
       );
 
@@ -65,15 +107,28 @@ const gameReducer: LoopReducer<IState, Message> = (
 };
 
 export function createGameStream(app: PIXI.Application): any {
-  const tickStream = Bacon.interval(16, true)
+  const tickStream = Bacon.interval(15, true)
     .map<Message>({ type: "TICK", app });
 
-  const inputStream = Bacon.fromEvent(document, "keydown")
+  const keyDownStream = Bacon.fromEvent(document, "keydown")
+    .filter((e: KeyboardEvent) => {
+      return e.repeat === false;
+    })
     .map<Message>((e: KeyboardEvent) => {
-      return { type: "KEY_PRESS", key: e.key };
+      return { type: "KEY_DOWN", key: e.key };
     });
 
-  const mergedStreams = Bacon.mergeAll(tickStream, inputStream);
+  const keyUpStream = Bacon.fromEvent(document, "keyup")
+    .map<Message>((e: KeyboardEvent) => {
+      return { type: "KEY_UP", key: e.key };
+    });
+
+  const keyStream = keyDownStream.merge(keyUpStream);
+
+  const mergedStreams = Bacon.mergeAll(
+    tickStream,
+    keyStream,
+  );
 
   // wrap the reducer so it always runs the drawing side effect after
   const wrappedReducer: LoopReducer<IState, Message> = (state, message) => {
@@ -100,7 +155,7 @@ export function createGameStream(app: PIXI.Application): any {
   const dispatch = (message: Message) => gameState.dispatch(message);
 
   return mergedStreams
-    .map((message) => dispatch(message))
-    .map(() =>  gameState.getState())
-    .onValue((val) => val);
+    .onValue((message) => {
+      return dispatch(message);
+    });
 }

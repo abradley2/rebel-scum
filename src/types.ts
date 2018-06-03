@@ -6,6 +6,8 @@ export interface IEntity {
   readonly active: boolean;
   readonly x: number;
   readonly y: number;
+  readonly width: number;
+  readonly height: number;
 }
 
 export enum EffectState  {
@@ -15,17 +17,31 @@ export enum EffectState  {
   FAILED = "FAILED",
 }
 
+export enum KeyState {
+  DOWN = "DOWN",
+  UP = "UP",
+}
+
 export type Message =
   | {
       readonly type: "TICK";
       readonly app: PIXI.Application;
     }
   | { readonly type: "GAME_READY" }
-  | { readonly type: "KEY_PRESS", readonly key: string }
+  | { readonly type: "KEY_DOWN", readonly key: string }
+  | { readonly type: "KEY_UP", readonly key: string }
   | { readonly type: "NOOP" };
+
+export interface IKeyMap {
+  readonly "w": KeyState;
+  readonly "a": KeyState;
+  readonly "s": KeyState;
+  readonly "d": KeyState;
+}
 
 export interface IState {
   readonly gameInitialized: EffectState;
   readonly paused: boolean;
   readonly entities: ReadonlyArray<IEntity>;
+  readonly keyMap: IKeyMap;
 }

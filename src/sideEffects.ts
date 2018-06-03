@@ -10,7 +10,7 @@ export const initGame = (app: PIXI.Application) => () => (new Promise((resolve) 
   document.getElementById("app").appendChild(app.view);
 
   PIXI.loader
-    .add("assets/xwing.png")
+    .add("assets/xwing-smol.png")
     .load(setup);
 
   function setup() {
@@ -25,7 +25,7 @@ export const draw = (
   entities.forEach(entity => {
     if (!drawableEntities[entity.id]) {
       const sprite = new PIXI.Sprite(
-        PIXI.loader.resources["assets/xwing.png"].texture,
+        PIXI.loader.resources[entity.sprite].texture,
       );
 
       app.stage.addChild(sprite);
