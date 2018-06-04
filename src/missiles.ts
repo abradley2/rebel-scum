@@ -10,7 +10,7 @@ const getMissileEntity = (id: string): IEntity => {
     width: 6,
     height: 40,
     active: false,
-    subType: { type: "MISSILE", speed: 12, velocity: 1 },
+    subType: { type: "MISSILE", speed: 14, velocity: 1 },
   };
 };
 

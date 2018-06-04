@@ -49,10 +49,10 @@ const updatePlayer = (state: IState): IState => {
     (p: IEntity) => predicate === KeyState.DOWN ? set(p, coord, p[coord] + value) : p;
 
   const updatedPlayer = [
-    setter(keyMap.w, "y", -5),
-    setter(keyMap.a, "x", -5),
-    setter(keyMap.s, "y", 5),
-    setter(keyMap.d, "x", 5),
+    setter(keyMap.w, "y", -7),
+    setter(keyMap.a, "x", -7),
+    setter(keyMap.s, "y", 7),
+    setter(keyMap.d, "x", 7),
   ].reduce((p, cur) => cur(p), player);
 
   return setIn(state, ["entities", 0], updatedPlayer);
