@@ -44,7 +44,7 @@ export const draw = (
 
 export const scheduleSpawn = (mean) => () => (new Promise(resolve => {
   setTimeout(
-    resolve(),
+    resolve(Math.random()),
     1000 * mean * Math.random()
   )
 }))

@@ -20,17 +20,57 @@ const getMissileEntity = (id: string): IEntity => {
   };
 };
 
+const getXwingEntity = (id: string): IEntity => {
+  return {
+    id,
+    sprite: "assets/xwing-smol.png",
+    x: 0,
+    y: 0,
+    width: 70,
+    height: 80,
+    active: false,
+    subType: {
+      type: "XWING",
+      params : {
+        direction: 0,
+      },
+    },
+  };
+};
+
+const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(15))
+  .map((_, idx) => {
+    return getXwingEntity(`xwing_${idx}`);
+  });
+
 const missiles: ReadonlyArray<IEntity> = Array.apply(false, Array(100))
   .map((_, idx) => {
-    return getMissileEntity(`${idx}`);
+    return getMissileEntity(`missile_${idx}`);
   });
+
+export function getXwing(
+  direction: number,
+  state: IState,
+): IEntity {
+  const result = xwings.find((m) => {
+    return m.subType.type === "XWING" && !state.entities.find((e) => e.id === m.id);
+  });
+
+  const xwing = result || xwings[0];
+
+  return assign(xwing, {
+    active: true,
+    x: direction * 400,
+    direction,
+  });
+
+}
 
 export function firePlayerMissile(state: IState): IState {
   const missile = missiles.find((m) => {
-    const existing = state.entities.find((e) => e.id === m.id);
-    return !existing;
+    return m.subType.type === "MISSILE" && !state.entities.find((e) => e.id === m.id);
   });
-  return set(
+  const newState = set(
     state,
     "entities",
     state.entities.concat(
@@ -41,22 +81,6 @@ export function firePlayerMissile(state: IState): IState {
       }),
     ),
   );
-}
 
-export function updateMissiles(state: IState): IState {
-  const entities = state.entities.map((entity) => {
-    const subType = entity.subType;
-    switch (subType.type) {
-      case "MISSILE":
-        return set(
-          entity,
-          "y",
-          entity.y - (subType.params.speed * subType.params.velocity),
-        );
-      default:
-        return entity;
-    }
-  });
-
-  return set(state, "entities", entities);
+  return newState;
 }

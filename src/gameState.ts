@@ -1,11 +1,11 @@
 import * as Bacon from "baconjs";
-import { set, setIn } from "icepick";
+import { assign, set, setIn } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
-import { Cmd, install, loop, Loop, LoopReducer } from "redux-loop";
-import {firePlayerMissile, updateMissiles} from "./missiles";
+import { Cmd, CmdType, install, loop, Loop, LoopReducer, RunCmd } from "redux-loop";
+import {firePlayerMissile, getXwing} from "./missiles";
 import * as sideEffects from "./sideEffects";
-import {EffectState, IEntity, IState, KeyState, Message} from "./types";
+import {EffectState, IEntity, IReducerBatchResult, IState, KeyState, Message} from "./types";
 
 const initialState: IState = {
   entities: [
@@ -38,6 +38,19 @@ const initialState: IState = {
   },
 };
 
+const reducerBatch = (
+  state: IState,
+  reducers: ReadonlyArray<(state: IState) => [IState, CmdType<any>]>,
+): IReducerBatchResult =>
+  reducers.reduce((acc, reducer) => {
+    const [newState, cmd] = reducer(acc.state);
+
+    return {
+      state: newState,
+      cmds: acc.cmds.concat([cmd]),
+    };
+  }, {state, cmds: []});
+
 const keyHandlers: {readonly [key: string]: (IState) => IState} = {
   "p": (state) => {
     return set(state, "paused", !state.paused);
@@ -48,7 +61,7 @@ const keyHandlers: {readonly [key: string]: (IState) => IState} = {
   },
 };
 
-const updatePlayer = (state: IState): IState => {
+const updatePlayer = (state: IState): [IState, CmdType<any>] => {
   const player = state.entities[0];
   const keyMap = state.keyMap;
 
@@ -63,17 +76,76 @@ const updatePlayer = (state: IState): IState => {
     setter(keyMap.d, "x", 5),
   ].reduce((p, cur) => cur(p), player);
 
-  return setIn(state, ["entities", 0], updatedPlayer);
+  const newState = setIn(state, ["entities", 0], updatedPlayer);
+
+  return [newState, Cmd.none];
 };
 
-const updateDirector = (state: IState): IState => {
-  return state;
+const updateMissiles = (state: IState): [IState, CmdType<any>] => {
+  const entities = state.entities.map((entity) => {
+    const subType = entity.subType;
+    switch (subType.type) {
+      case "MISSILE":
+        return set(
+          entity,
+          "y",
+          entity.y - (subType.params.speed * subType.params.velocity),
+        );
+      default:
+        return entity;
+    }
+  });
+
+  const newState = set(state, "entities", entities);
+
+  return [newState, Cmd.none];
+};
+
+const updateDirector = (state: IState): [IState, CmdType<Message>] => {
+  const result = reducerBatch(state, [
+    (curState) => {
+      switch ( curState.director.xwingSpawn) {
+        case EffectState.NOT_STARTED:
+          return [
+            setIn(curState, ["director", "xwingSpawn"], EffectState.PENDING),
+            Cmd.run(
+              sideEffects.scheduleSpawn(1),
+              {
+                successActionCreator: (rand) => {
+                  return {type: "SPAWN_XWING", xwing: getXwing(rand, curState)};
+                },
+              },
+            ),
+          ];
+        default:
+          return [curState, Cmd.none];
+      }
+    },
+  ]);
+
+  return [
+    result.state,
+    Cmd.list(result.cmds),
+  ];
 };
 
 const setKeyMapState = (state: IState, key: string, isDown: boolean): IState => {
   return Object.keys(state.keyMap).indexOf(key) !== -1 ?
      setIn(state, ["keyMap", key], isDown ? KeyState.DOWN : KeyState.UP)
      : state;
+};
+
+const composeUpdaters = (state: IState) => {
+  const result = reducerBatch(state, [
+    updateDirector,
+    updateMissiles,
+    updatePlayer,
+  ]);
+
+  return loop(
+    result.state,
+    Cmd.list(result.cmds),
+  );
 };
 
 const gameReducer: LoopReducer<IState, Message> = (
@@ -93,14 +165,16 @@ const gameReducer: LoopReducer<IState, Message> = (
           ),
         )
         // otherwise run the reducers for players and other entities
-        : loop(
-            [
-              updateDirector,
-              updateMissiles,
-              updatePlayer,
-            ].reduce((currentState, reducer) => reducer(currentState), state),
-            Cmd.none,
-        );
+        : composeUpdaters(state);
+
+    case "SPAWN_XWING":
+      return loop(
+        assign(state, {
+          director: set(state.director, "xwingSpawn", EffectState.NOT_STARTED),
+          entities: state.entities.concat([message.xwing]),
+        }),
+        Cmd.none,
+      );
 
     case "KEY_UP":
       return loop(

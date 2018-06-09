@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import {CmdType} from "redux-loop";
 
 export enum EffectState  {
   NOT_STARTED = "NOT_STARTED",
@@ -16,6 +17,10 @@ export interface IPlayerSubType {
   readonly name: string;
 }
 
+export interface IXWingSubType {
+  readonly direction: number;
+}
+
 export interface IMissileSubType  {
   readonly speed: number;
   readonly velocity: number;
@@ -23,6 +28,7 @@ export interface IMissileSubType  {
 
 export type EntitySubType =
   | { readonly type: "PLAYER"; readonly params: IPlayerSubType }
+  | { readonly type: "XWING"; readonly params: IXWingSubType }
   | { readonly type: "MISSILE"; readonly params: IMissileSubType };
 
 export interface IEntity {
@@ -85,6 +91,7 @@ export type Message =
   | { readonly type: "GAME_READY" }
   | { readonly type: "KEY_DOWN", readonly key: string }
   | { readonly type: "KEY_UP", readonly key: string }
+  | { readonly type: "SPAWN_XWING", readonly xwing: IEntity }
   | { readonly type: "NOOP" };
 
 export interface IKeyMap {
@@ -104,4 +111,9 @@ export interface IState {
   readonly entities: ReadonlyArray<IEntity>;
   readonly keyMap: IKeyMap;
   readonly director: IDirectorState;
+}
+
+export interface IReducerBatchResult {
+  readonly state: IState;
+   readonly cmds: Array<CmdType<Message>>;
 }
