@@ -841,6 +841,10 @@ for-own@^0.1.4:
   dependencies:
     for-in "^1.0.1"
 
+fp-ts@^1.6.2:
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/fp-ts/-/fp-ts-1.6.2.tgz#21f3675262d35b507b6e854f68965979e125ff77"
+
 fresh@0.5.2:
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/fresh/-/fresh-0.5.2.tgz#3d8cadd90d976569fa835ab1f8e4b23a105605a7"

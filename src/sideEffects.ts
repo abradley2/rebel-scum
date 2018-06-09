@@ -41,4 +41,11 @@ export const draw = (
     })
   })
 }
+
+export const scheduleSpawn = (mean) => () => (new Promise(resolve => {
+  setTimeout(
+    resolve(),
+    1000 * mean * Math.random()
+  )
+}))
 /* tslint:enable */

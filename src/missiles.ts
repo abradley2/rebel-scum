@@ -10,7 +10,13 @@ const getMissileEntity = (id: string): IEntity => {
     width: 6,
     height: 40,
     active: false,
-    subType: { type: "MISSILE", speed: 14, velocity: 1 },
+    subType: {
+      type: "MISSILE",
+      params : {
+        speed: 20,
+        velocity: 1,
+      },
+    },
   };
 };
 
@@ -45,7 +51,7 @@ export function updateMissiles(state: IState): IState {
         return set(
           entity,
           "y",
-          entity.y - (subType.speed * subType.velocity),
+          entity.y - (subType.params.speed * subType.params.velocity),
         );
       default:
         return entity;

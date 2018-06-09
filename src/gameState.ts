@@ -17,7 +17,12 @@ const initialState: IState = {
       y: 500,
       width: 70,
       height: 80,
-      subType: { type: "PLAYER" },
+      subType: {
+        type: "PLAYER",
+        params: {
+          name: "player1",
+        },
+      },
     },
   ],
   gameInitialized: EffectState.NOT_STARTED,
@@ -28,6 +33,9 @@ const initialState: IState = {
     w: KeyState.UP,
   },
   paused: false,
+  director: {
+    xwingSpawn: EffectState.NOT_STARTED,
+  },
 };
 
 const keyHandlers: {readonly [key: string]: (IState) => IState} = {
@@ -49,13 +57,17 @@ const updatePlayer = (state: IState): IState => {
     (p: IEntity) => predicate === KeyState.DOWN ? set(p, coord, p[coord] + value) : p;
 
   const updatedPlayer = [
-    setter(keyMap.w, "y", -7),
-    setter(keyMap.a, "x", -7),
-    setter(keyMap.s, "y", 7),
-    setter(keyMap.d, "x", 7),
+    setter(keyMap.w, "y", -5),
+    setter(keyMap.a, "x", -5),
+    setter(keyMap.s, "y", 5),
+    setter(keyMap.d, "x", 5),
   ].reduce((p, cur) => cur(p), player);
 
   return setIn(state, ["entities", 0], updatedPlayer);
+};
+
+const updateDirector = (state: IState): IState => {
+  return state;
 };
 
 const setKeyMapState = (state: IState, key: string, isDown: boolean): IState => {
@@ -69,19 +81,6 @@ const gameReducer: LoopReducer<IState, Message> = (
 ): Loop<IState, Message> => {
   switch (message.type) {
     case "TICK":
-      // const categorized = state.entities.reduce((acc, cur) => {
-      //   const [key, val] = {
-      //     missile: ["missiles", acc.missiles.concat([cur])],
-      //   }[cur.subType.type];
-      //
-      //   return assign(acc, {
-      //     player: acc.player,
-      //     [key]: val,
-      //   });
-      // }, {
-      //   player: state.entities[0],
-      //   missiles: [],
-      // });
       return state.gameInitialized === EffectState.NOT_STARTED
         // if still loading call the init game effect
         ? loop(
@@ -96,6 +95,7 @@ const gameReducer: LoopReducer<IState, Message> = (
         // otherwise run the reducers for players and other entities
         : loop(
             [
+              updateDirector,
               updateMissiles,
               updatePlayer,
             ].reduce((currentState, reducer) => reducer(currentState), state),
@@ -127,7 +127,7 @@ const gameReducer: LoopReducer<IState, Message> = (
 };
 
 export function createGameStream(app: PIXI.Application): any {
-  const tickStream = Bacon.interval(15, true)
+  const tickStream = Bacon.interval(10, true)
     .map<Message>({ type: "TICK", app });
 
   const keyDownStream = Bacon.fromEvent(document, "keydown")
