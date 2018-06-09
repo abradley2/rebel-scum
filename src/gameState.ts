@@ -2,7 +2,7 @@ import * as Bacon from "baconjs";
 import { assign, set, setIn } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
-import { Cmd, CmdType, install, loop, Loop, LoopReducer, RunCmd } from "redux-loop";
+import { Cmd, CmdType, install, loop, Loop, LoopReducer } from "redux-loop";
 import {firePlayerMissile, getXwing} from "./missiles";
 import * as sideEffects from "./sideEffects";
 import {EffectState, IEntity, IReducerBatchResult, IState, KeyState, Message} from "./types";
