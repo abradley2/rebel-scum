@@ -3,6 +3,7 @@ import { assign, set, setIn } from "icepick";
 import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, CmdType, install, loop, Loop, LoopReducer } from "redux-loop";
+import {gameHeight, gameWidth} from "./constants";
 import {firePlayerMissile, getXwing} from "./missiles";
 import * as sideEffects from "./sideEffects";
 import {EffectState, IEntity, IReducerBatchResult, IState, KeyState, Message} from "./types";
@@ -166,8 +167,15 @@ const updateMobs = (state: IState): [IState, CmdType<Message>] => {
     cmds: [],
   });
 
+  const entities = result.entities.filter((entity) => {
+    return entity.x > -100 &&
+      entity.y > -100 &&
+      entity.x < gameWidth + 100 &&
+      entity.y < gameHeight + 100;
+  });
+
   return [
-    set(state, "entities", result.entities),
+    set(state, "entities", entities),
     Cmd.list(result.cmds),
   ];
 };
