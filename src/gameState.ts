@@ -4,7 +4,7 @@ import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, CmdType, install, loop, Loop, LoopReducer } from "redux-loop";
 import {gameHeight, gameWidth} from "./constants";
-import {firePlayerMissile, getXwing} from "./missiles";
+import {firePlayerMissile, getTieFighter, getXwing} from "./missiles";
 import * as sideEffects from "./sideEffects";
 import {EffectState, IEntity, IReducerBatchResult, IState, KeyState, Message} from "./types";
 
@@ -37,6 +37,7 @@ const initialState: IState = {
   paused: false,
   director: {
     xwingSpawn: EffectState.NOT_STARTED,
+    tieFighterSpawn: EffectState.NOT_STARTED,
   },
 };
 
@@ -83,6 +84,19 @@ const updatePlayer = (state: IState): [IState, CmdType<any>] => {
   return [newState, Cmd.none];
 };
 
+// const willSpawn = (
+//   directorSpawnKey: string,
+//   successActionCreator: (...args: any[]) => any,
+// ) => (state) => state.director[directorSpawnKey] === EffectState.NOT_STARTED
+//   ? [
+//     setIn(state, ["director", directorSpawnKey], EffectState.PENDING),
+//     Cmd.run(
+//       sideEffects.scheduleSpawn(.25),
+//       { successActionCreator },
+//     ),
+//   ]
+//   : [state, Cmd.none];
+
 const updateDirector = (state: IState): [IState, CmdType<Message>] => {
   const result = reducerBatch(state, [
     (curState) => {
@@ -95,6 +109,24 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
               {
                 successActionCreator: ([random1]) => {
                   return {type: "SPAWN_XWING", xwing: getXwing(curState, random1)};
+                },
+              },
+            ),
+          ];
+        default:
+          return [curState, Cmd.none];
+      }
+    },
+    (curState) => {
+      switch ( curState.director.tieFighterSpawn) {
+        case EffectState.NOT_STARTED:
+          return [
+            setIn(curState, ["director", "tieFighterSpawn"], EffectState.PENDING),
+            Cmd.run(
+              sideEffects.scheduleSpawn(.25),
+              {
+                successActionCreator: ([random1]) => {
+                  return {type: "SPAWN_TIEFIGHTER", tieFighter: getTieFighter(curState, random1)};
                 },
               },
             ),
@@ -124,6 +156,13 @@ const updateXWing = (entity: IEntity) => {
   ];
 };
 
+const updateTieFighter = (entity: IEntity) => {
+  return [
+    set(entity, "y", entity.y - 5),
+    Cmd.none,
+  ];
+};
+
 const updateMissile = (entity: IEntity) => {
   switch (entity.subType.type) {
     case "MISSILE":
@@ -147,6 +186,8 @@ const updateMob = (entity: IEntity) => {
   switch (subType.type) {
     case "XWING":
       return updateXWing(entity);
+    case "TIEFIGHTER":
+      return updateTieFighter(entity);
     case "MISSILE":
       return updateMissile(entity);
     default:
@@ -217,6 +258,15 @@ const gameReducer: LoopReducer<IState, Message> = (
         assign(state, {
           director: set(state.director, "xwingSpawn", EffectState.NOT_STARTED),
           entities: state.entities.concat([message.xwing]),
+        }),
+        Cmd.none,
+      );
+
+    case "SPAWN_TIEFIGHTER":
+      return loop(
+        assign(state, {
+          director: set(state.director, "tieFighterSpawn", EffectState.NOT_STARTED),
+          entities: state.entities.concat([message.tieFighter]),
         }),
         Cmd.none,
       );

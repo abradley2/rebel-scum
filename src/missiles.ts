@@ -1,5 +1,5 @@
 import {assign, set} from "icepick";
-import {gameWidth} from "./constants";
+import {gameHeight, gameWidth} from "./constants";
 import {EffectState, IEntity, IState} from "./types";
 
 const getMissileEntity = (id: string): IEntity => {
@@ -42,6 +42,31 @@ const getXwingEntity = (id: string): IEntity => {
   };
 };
 
+const getTieFighterEntity = (id: string): IEntity => {
+  return {
+    id,
+    sprite: "assets/tie-smol.png",
+    x: 0,
+    y: gameHeight + 80,
+    width: 70,
+    height: 80,
+    rotation: 0,
+    active: false,
+    subType: {
+      type: "TIEFIGHTER",
+      params : {
+        squad: 0,
+        missileShot: EffectState.NOT_STARTED,
+      },
+    },
+  };
+};
+
+const tieFighters: ReadonlyArray<IEntity> = Array.apply(false, Array(30))
+  .map((_, idx) => {
+    return getTieFighterEntity(`tiefighter_${idx}`);
+  });
+
 const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(30))
   .map((_, idx) => {
     return getXwingEntity(`xwing_${idx}`);
@@ -65,7 +90,21 @@ export function getXwing(
     active: true,
     x: random1 * gameWidth,
   });
+}
 
+export function getTieFighter(
+  state: IState,
+  random1: number,
+): IEntity {
+  const result = tieFighters.find((m) => {
+    return m.subType.type === "TIEFIGHTER" && !state.entities.find((e) => e.id === m.id);
+  });
+
+  const tie = result || xwings[0];
+  return assign(tie, {
+    active: true,
+    x: random1 * gameWidth,
+  });
 }
 
 export function firePlayerMissile(state: IState): IState {
