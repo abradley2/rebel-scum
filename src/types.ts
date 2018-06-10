@@ -18,7 +18,7 @@ export interface IPlayerSubType {
 }
 
 export interface IXWingSubType {
-  readonly direction: number;
+  readonly squad: number;
 }
 
 export interface IMissileSubType  {
@@ -39,6 +39,7 @@ export interface IEntity {
   readonly y: number;
   readonly width: number;
   readonly height: number;
+  readonly rotation: number;
   readonly subType: EntitySubType;
 }
 

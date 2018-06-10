@@ -17,6 +17,7 @@ const initialState: IState = {
       y: 500,
       width: 70,
       height: 80,
+      rotation: 0,
       subType: {
         type: "PLAYER",
         params: {
@@ -111,8 +112,8 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
             Cmd.run(
               sideEffects.scheduleSpawn(1),
               {
-                successActionCreator: (rand) => {
-                  return {type: "SPAWN_XWING", xwing: getXwing(rand, curState)};
+                successActionCreator: ([random1]) => {
+                  return {type: "SPAWN_XWING", xwing: getXwing(curState, random1)};
                 },
               },
             ),
@@ -129,6 +130,21 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
   ];
 };
 
+const updateXwings = (state: IState): [IState, CmdType<Message>] => {
+  const entities = state.entities.map((entity) => {
+    const subType = entity.subType;
+    switch (subType.type) {
+      case "XWING":
+        return set(entity, "y", entity.y + 5);
+      default:
+        return entity;
+    }
+  });
+
+  const newState = set(state, "entities", entities);
+  return [newState, Cmd.none];
+};
+
 const setKeyMapState = (state: IState, key: string, isDown: boolean): IState => {
   return Object.keys(state.keyMap).indexOf(key) !== -1 ?
      setIn(state, ["keyMap", key], isDown ? KeyState.DOWN : KeyState.UP)
@@ -139,6 +155,7 @@ const composeUpdaters = (state: IState) => {
   const result = reducerBatch(state, [
     updateDirector,
     updateMissiles,
+    updateXwings,
     updatePlayer,
   ]);
 

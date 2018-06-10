@@ -1,4 +1,5 @@
 import {assign, set} from "icepick";
+import {gameWidth} from "./constants";
 import {IEntity, IState} from "./types";
 
 const getMissileEntity = (id: string): IEntity => {
@@ -9,6 +10,7 @@ const getMissileEntity = (id: string): IEntity => {
     y: 0,
     width: 6,
     height: 40,
+    rotation: 0,
     active: false,
     subType: {
       type: "MISSILE",
@@ -28,11 +30,12 @@ const getXwingEntity = (id: string): IEntity => {
     y: 0,
     width: 70,
     height: 80,
+    rotation: 3.14,
     active: false,
     subType: {
       type: "XWING",
       params : {
-        direction: 0,
+        squad: 0,
       },
     },
   };
@@ -49,19 +52,17 @@ const missiles: ReadonlyArray<IEntity> = Array.apply(false, Array(100))
   });
 
 export function getXwing(
-  direction: number,
   state: IState,
+  random1: number,
 ): IEntity {
   const result = xwings.find((m) => {
     return m.subType.type === "XWING" && !state.entities.find((e) => e.id === m.id);
   });
 
   const xwing = result || xwings[0];
-
   return assign(xwing, {
     active: true,
-    x: direction * 400,
-    direction,
+    x: random1 * gameWidth,
   });
 
 }

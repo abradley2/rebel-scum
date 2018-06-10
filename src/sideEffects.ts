@@ -37,14 +37,17 @@ export const draw = (
 
     Object.assign(drawableEntities[entity.id], {
       x: entity.x,
-      y: entity.y
+      y: entity.y,
+      rotation: entity.rotation
     })
   })
 }
 
 export const scheduleSpawn = (mean) => () => (new Promise(resolve => {
+  // these are just super useful to grab here
+  const [random1, random2, random3, random4] = [1, 2, 3, 4].map(Math.random)
   setTimeout(
-    () => resolve(Math.random()),
+    () => resolve([random1, random2, random3, random4]),
     1000 * mean * Math.random()
   )
 }))
