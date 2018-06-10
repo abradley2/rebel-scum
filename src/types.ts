@@ -19,6 +19,7 @@ export interface IPlayerSubType {
 
 export interface IXWingSubType {
   readonly squad: number;
+  readonly missileShot: EffectState;
 }
 
 export interface IMissileSubType  {

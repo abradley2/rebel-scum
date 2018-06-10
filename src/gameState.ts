@@ -41,7 +41,7 @@ const initialState: IState = {
 
 const reducerBatch = (
   state: IState,
-  reducers: ReadonlyArray<(state: IState) => [IState, CmdType<any>]>,
+  reducers: Array<(state: IState) => [IState, CmdType<any>]>,
 ): IReducerBatchResult =>
   reducers.reduce((acc, reducer) => {
     const [newState, cmd] = reducer(acc.state);
@@ -82,26 +82,6 @@ const updatePlayer = (state: IState): [IState, CmdType<any>] => {
   return [newState, Cmd.none];
 };
 
-const updateMissiles = (state: IState): [IState, CmdType<any>] => {
-  const entities = state.entities.map((entity) => {
-    const subType = entity.subType;
-    switch (subType.type) {
-      case "MISSILE":
-        return set(
-          entity,
-          "y",
-          entity.y - (subType.params.speed * subType.params.velocity),
-        );
-      default:
-        return entity;
-    }
-  });
-
-  const newState = set(state, "entities", entities);
-
-  return [newState, Cmd.none];
-};
-
 const updateDirector = (state: IState): [IState, CmdType<Message>] => {
   const result = reducerBatch(state, [
     (curState) => {
@@ -130,32 +110,72 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
   ];
 };
 
-const updateXwings = (state: IState): [IState, CmdType<Message>] => {
-  const entities = state.entities.map((entity) => {
-    const subType = entity.subType;
-    switch (subType.type) {
-      case "XWING":
-        return set(entity, "y", entity.y + 5);
-      default:
-        return entity;
-    }
-  });
-
-  const newState = set(state, "entities", entities);
-  return [newState, Cmd.none];
-};
-
 const setKeyMapState = (state: IState, key: string, isDown: boolean): IState => {
   return Object.keys(state.keyMap).indexOf(key) !== -1 ?
      setIn(state, ["keyMap", key], isDown ? KeyState.DOWN : KeyState.UP)
      : state;
 };
 
+const updateXWing = (entity: IEntity) => {
+  return [
+    set(entity, "y", entity.y + 5),
+    Cmd.none,
+  ];
+};
+
+const updateMissile = (entity: IEntity) => {
+  switch (entity.subType.type) {
+    case "MISSILE":
+      const missile = set(
+        entity,
+        "y",
+        entity.y - (entity.subType.params.speed * entity.subType.params.velocity),
+      );
+      return [
+        missile,
+        Cmd.none,
+      ];
+    default:
+      throw new Error("NOT A MISSILE");
+  }
+};
+
+const updateMob = (entity: IEntity) => {
+  const subType = entity.subType;
+
+  switch (subType.type) {
+    case "XWING":
+      return updateXWing(entity);
+    case "MISSILE":
+      return updateMissile(entity);
+    default:
+      return [entity, Cmd.none];
+  }
+};
+
+const updateMobs = (state: IState): [IState, CmdType<Message>] => {
+  const result = state.entities.reduce((acc, cur) => {
+    const [entity, cmd] = updateMob(cur);
+
+    return {
+      entities: acc.entities.concat([entity]),
+      cmds: acc.cmds.concat([cmd]),
+    };
+  }, {
+    entities: [],
+    cmds: [],
+  });
+
+  return [
+    set(state, "entities", result.entities),
+    Cmd.list(result.cmds),
+  ];
+};
+
 const composeUpdaters = (state: IState) => {
   const result = reducerBatch(state, [
     updateDirector,
-    updateMissiles,
-    updateXwings,
+    updateMobs,
     updatePlayer,
   ]);
 

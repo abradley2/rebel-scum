@@ -51,4 +51,11 @@ export const scheduleSpawn = (mean) => () => (new Promise(resolve => {
     1000 * mean * Math.random()
   )
 }))
+
+export const scheduleAction = (mean: number, unitId: string) => () => (new Promise(resolve => {
+  setTimeout(
+    () => resolve(unitId),
+    1000 * mean * Math.random()
+  )
+}))
 /* tslint:enable */

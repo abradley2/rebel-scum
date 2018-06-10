@@ -1,6 +1,6 @@
 import {assign, set} from "icepick";
 import {gameWidth} from "./constants";
-import {IEntity, IState} from "./types";
+import {EffectState, IEntity, IState} from "./types";
 
 const getMissileEntity = (id: string): IEntity => {
   return {
@@ -36,6 +36,7 @@ const getXwingEntity = (id: string): IEntity => {
       type: "XWING",
       params : {
         squad: 0,
+        missileShot: EffectState.NOT_STARTED,
       },
     },
   };
