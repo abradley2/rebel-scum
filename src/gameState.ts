@@ -107,8 +107,8 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
             Cmd.run(
               sideEffects.scheduleSpawn(.25),
               {
-                successActionCreator: ([random1]) => {
-                  return {type: "SPAWN_XWING", xwing: getXwing(curState, random1)};
+                successActionCreator: ([spawnId, random1]) => {
+                  return {type: "SPAWN_XWING", xwing: getXwing(spawnId, curState, random1)};
                 },
               },
             ),
@@ -125,8 +125,8 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
             Cmd.run(
               sideEffects.scheduleSpawn(.25),
               {
-                successActionCreator: ([random1]) => {
-                  return {type: "SPAWN_TIEFIGHTER", tieFighter: getTieFighter(curState, random1)};
+                successActionCreator: ([spawnId, random1]) => {
+                  return {type: "SPAWN_TIEFIGHTER", tieFighter: getTieFighter(spawnId, curState, random1)};
                 },
               },
             ),

@@ -35,6 +35,7 @@ const getXwingEntity = (id: string): IEntity => {
     subType: {
       type: "XWING",
       params : {
+        spawnId: "unassigned",
         squad: 0,
         missileShot: EffectState.NOT_STARTED,
       },
@@ -55,6 +56,7 @@ const getTieFighterEntity = (id: string): IEntity => {
     subType: {
       type: "TIEFIGHTER",
       params : {
+        spawnId: "unsassigned",
         squad: 0,
         missileShot: EffectState.NOT_STARTED,
       },
@@ -62,22 +64,23 @@ const getTieFighterEntity = (id: string): IEntity => {
   };
 };
 
-const tieFighters: ReadonlyArray<IEntity> = Array.apply(false, Array(30))
+const tieFighters: ReadonlyArray<IEntity> = Array.apply(false, Array(50))
   .map((_, idx) => {
     return getTieFighterEntity(`tiefighter_${idx}`);
   });
 
-const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(30))
+const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(50))
   .map((_, idx) => {
     return getXwingEntity(`xwing_${idx}`);
   });
 
-const missiles: ReadonlyArray<IEntity> = Array.apply(false, Array(100))
+const missiles: ReadonlyArray<IEntity> = Array.apply(false, Array(200))
   .map((_, idx) => {
     return getMissileEntity(`missile_${idx}`);
   });
 
 export function getXwing(
+  spawnId: string,
   state: IState,
   random1: number,
 ): IEntity {
@@ -88,11 +91,13 @@ export function getXwing(
   const xwing = result || xwings[0];
   return assign(xwing, {
     active: true,
+    spawnId,
     x: random1 * gameWidth,
   });
 }
 
 export function getTieFighter(
+  spawnId: string,
   state: IState,
   random1: number,
 ): IEntity {
@@ -103,6 +108,7 @@ export function getTieFighter(
   const tie = result || xwings[0];
   return assign(tie, {
     active: true,
+    spawnId,
     x: random1 * gameWidth,
   });
 }

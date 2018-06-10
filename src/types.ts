@@ -20,11 +20,13 @@ export interface IPlayerSubType {
 export interface IXWingSubType {
   readonly squad: number;
   readonly missileShot: EffectState;
+  readonly spawnId: string;
 }
 
 export interface ITieFighterSubType {
   readonly squad: number;
   readonly missileShot: EffectState;
+  readonly spawnId: string;
 }
 
 export interface IMissileSubType  {

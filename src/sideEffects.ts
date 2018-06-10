@@ -4,6 +4,7 @@ import {IEntity} from "./types";
 // .. just disabling tslint here since everything is a side effect
 
 /* tslint:disable*/
+let spawnId = 0
 const drawableEntities: {[entityId: string]: PIXI.Sprite} = {}
 
 export const initGame = (app: PIXI.Application) => () => (new Promise((resolve) => {
@@ -47,14 +48,14 @@ export const scheduleSpawn = (mean) => () => (new Promise(resolve => {
   // these are just super useful to grab here
   const [random1, random2, random3, random4] = [1, 2, 3, 4].map(Math.random)
   setTimeout(
-    () => resolve([random1, random2, random3, random4]),
+    () => resolve([`${spawnId++}`, random1, random2, random3, random4]),
     1000 * mean * Math.random()
   )
 }))
 
-export const scheduleAction = (mean: number, unitId: string) => () => (new Promise(resolve => {
+export const scheduleAction = (mean: number, spawnId: string) => () => (new Promise(resolve => {
   setTimeout(
-    () => resolve(unitId),
+    () => resolve(spawnId),
     1000 * mean * Math.random()
   )
 }))
