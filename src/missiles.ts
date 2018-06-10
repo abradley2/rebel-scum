@@ -42,7 +42,7 @@ const getXwingEntity = (id: string): IEntity => {
   };
 };
 
-const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(15))
+const xwings: ReadonlyArray<IEntity> = Array.apply(false, Array(30))
   .map((_, idx) => {
     return getXwingEntity(`xwing_${idx}`);
   });

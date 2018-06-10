@@ -91,7 +91,7 @@ const updateDirector = (state: IState): [IState, CmdType<Message>] => {
           return [
             setIn(curState, ["director", "xwingSpawn"], EffectState.PENDING),
             Cmd.run(
-              sideEffects.scheduleSpawn(1),
+              sideEffects.scheduleSpawn(.25),
               {
                 successActionCreator: ([random1]) => {
                   return {type: "SPAWN_XWING", xwing: getXwing(curState, random1)};
