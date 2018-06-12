@@ -1,5 +1,5 @@
 import {assign, set} from "icepick";
-import {gameHeight, gameWidth} from "./constants";
+import {deliciousPi, gameHeight, gameWidth} from "./constants";
 import {EffectState, IEntity, IState} from "./types";
 
 const getMissileEntity = (id: string): IEntity => {
@@ -8,6 +8,8 @@ const getMissileEntity = (id: string): IEntity => {
     sprite: "assets/lazor.png",
     x: 0,
     y: 0,
+    xVel: 0,
+    yVel: 1,
     width: 6,
     height: 40,
     rotation: 0,
@@ -28,16 +30,18 @@ const getXwingEntity = (id: string): IEntity => {
     sprite: "assets/xwing-smol.png",
     x: 0,
     y: 0,
+    xVel: 0,
+    yVel: 1,
     width: 70,
     height: 80,
-    rotation: 3.14,
+    rotation: deliciousPi,
     active: false,
     subType: {
       type: "XWING",
       params : {
+        missileShot: EffectState.NOT_STARTED,
         spawnId: "unassigned",
         squad: 0,
-        missileShot: EffectState.NOT_STARTED,
       },
     },
   };
@@ -49,6 +53,8 @@ const getTieFighterEntity = (id: string): IEntity => {
     sprite: "assets/tie-smol.png",
     x: 0,
     y: gameHeight + 80,
+    xVel: 0,
+    yVel: -1,
     width: 70,
     height: 80,
     rotation: 0,

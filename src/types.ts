@@ -46,6 +46,8 @@ export interface IEntity {
   readonly active: boolean;
   readonly x: number;
   readonly y: number;
+  readonly xVel: number;
+  readonly yVel: number;
   readonly width: number;
   readonly height: number;
   readonly rotation: number;

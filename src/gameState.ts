@@ -16,6 +16,8 @@ const initialState: IState = {
       sprite: "assets/tie-smol.png",
       x: 500,
       y: 500,
+      xVel: 0,
+      yVel: 0,
       width: 70,
       height: 80,
       rotation: 0,
@@ -169,7 +171,7 @@ const updateMissile = (entity: IEntity) => {
       const missile = set(
         entity,
         "y",
-        entity.y - (entity.subType.params.speed * entity.subType.params.velocity),
+        entity.y + (entity.subType.params.speed * entity.subType.params.velocity),
       );
       return [
         missile,
