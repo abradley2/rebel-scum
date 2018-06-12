@@ -70,6 +70,7 @@ export type Message =
   | { readonly type: "KEY_UP", readonly key: string }
   | { readonly type: "SPAWN_XWING", readonly xwing: IEntity }
   | { readonly type: "SPAWN_TIEFIGHTER", readonly tieFighter: IEntity }
+  | { readonly type: "FIRE_MISSILE", readonly spawnId: string }
   | { readonly type: "NOOP" };
 
 export interface IKeyMap {

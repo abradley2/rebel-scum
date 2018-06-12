@@ -1,4 +1,4 @@
-import {assign, set} from "icepick";
+import {assign, set, setIn} from "icepick";
 import {deliciousPi, gameHeight, gameWidth} from "./constants";
 import {EffectState, IEntity, IState} from "./types";
 
@@ -9,7 +9,7 @@ const getMissileEntity = (id: string): IEntity => {
     x: 0,
     y: 0,
     xVel: 0,
-    yVel: 1,
+    yVel: -1,
     width: 6,
     height: 40,
     rotation: 0,
@@ -114,7 +114,7 @@ export function getTieFighter(
   const tie = result || xwings[0];
   return assign(tie, {
     active: true,
-    spawnId,
+    subType: setIn(tie.subType, ["params", "spawnId"], spawnId),
     x: random1 * gameWidth,
   });
 }
@@ -136,4 +136,24 @@ export function firePlayerMissile(state: IState): IState {
   );
 
   return newState;
+}
+
+export function fireMissile(entities: ReadonlyArray<any>, spawnId): IEntity[] {
+  const entity = entities.find((e) => {
+    return e.subType.params.spawnId === spawnId;
+  });
+
+  const missile = missiles.find((m) => {
+    return m.subType.type === "MISSILE" && !entities.find((e) => e.id === m.id);
+  });
+
+  return entity
+    ? [
+      assign(missile, {
+        active: true,
+        x: entity.x,
+        y: entity.y,
+      }),
+    ]
+    : [];
 }

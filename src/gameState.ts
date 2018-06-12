@@ -4,7 +4,7 @@ import * as PIXI from "pixi.js";
 import { createStore } from "redux";
 import { Cmd, CmdType, install, loop, Loop, LoopReducer } from "redux-loop";
 import {gameHeight, gameWidth} from "./constants";
-import {firePlayerMissile, getTieFighter, getXwing} from "./missiles";
+import {fireMissile, firePlayerMissile, getTieFighter, getXwing} from "./missiles";
 import * as sideEffects from "./sideEffects";
 import {EffectState, IEntity, IReducerBatchResult, IState, KeyState, Message} from "./types";
 
@@ -159,10 +159,29 @@ const updateXWing = (entity: IEntity) => {
 };
 
 const updateTieFighter = (entity: IEntity) => {
-  return [
-    set(entity, "y", entity.y - 5),
-    Cmd.none,
-  ];
+  const updatedEntity = set(entity, "y", entity.y - 5);
+  const subType = entity.subType;
+  switch (subType.type) {
+    case "TIEFIGHTER":
+      return subType.params.missileShot === EffectState.NOT_STARTED
+        ? [
+          assign(updatedEntity, {
+            subType: setIn(updatedEntity.subType, ["params", "missileShot"], EffectState.PENDING),
+          }),
+          Cmd.run(
+            sideEffects.scheduleAction(1, subType.params.spawnId),
+            {
+              successActionCreator: (spawnId) => {
+                return { type: "FIRE_MISSILE", spawnId };
+              },
+            },
+          ),
+        ]
+        : [updatedEntity, Cmd.none];
+    default:
+      return [updatedEntity, Cmd.none];
+  }
+
 };
 
 const updateMissile = (entity: IEntity) => {
@@ -171,7 +190,7 @@ const updateMissile = (entity: IEntity) => {
       const missile = set(
         entity,
         "y",
-        entity.y + (entity.subType.params.speed * entity.subType.params.velocity),
+        entity.y + (entity.subType.params.speed * entity.yVel),
       );
       return [
         missile,
@@ -261,6 +280,27 @@ const gameReducer: LoopReducer<IState, Message> = (
           director: set(state.director, "xwingSpawn", EffectState.NOT_STARTED),
           entities: state.entities.concat([message.xwing]),
         }),
+        Cmd.none,
+      );
+
+    case "FIRE_MISSILE":
+      return loop(
+        set(state, "entities",
+        state.entities
+          .concat(
+            fireMissile(state.entities, message.spawnId),
+          )
+          .map((e) => {
+            switch (e.subType.type) {
+              case "TIEFIGHTER":
+                return e.subType.params.spawnId === message.spawnId
+                  ? setIn(e, ["subType", "params", "missileShot"], EffectState.NOT_STARTED)
+                  : e;
+              default:
+                return e;
+            }
+          }),
+        ),
         Cmd.none,
       );
 
